@@ -3,13 +3,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import numpy as np
 
 X = train_data.data_tensor
 Y = train_data.target_tensor
 N_in = len(X[1])
 N_out = len(Y[1])
 N_hidden = 30
-N_epochs = 500
 
 class Perceptron(nn.Module):
 
@@ -37,23 +37,35 @@ class MLP(nn.Module):
                 x = self.out(x)
                 return x
 
+            def predict(self, x):
+                x = Variable(torch.FloatTensor(np.asarray(x)))
+                y = self.forward(x).data.numpy()[0]
+                return y
+
 net = MLP()
-x = Variable(X)
-out = net(x)
-target = Variable(Y)
+net.load_state_dict(torch.load('models/mlp500'))
 
-criterion = nn.MSELoss()
-
-for epoch in range(N_epochs):
-    loss = criterion(out, target)
-    print('epoch', epoch + 1, ', loss:', loss)
-    net.zero_grad()  # reset gradients
-    loss.backward()  # compute gradients
-    # update weights
-    learning_rate = 0.01
-    for f in net.parameters():
-        # for each parameter, take a small step in the opposite dir of the gradient
-        # sub_ substracts in-place
-        f.data.sub_(f.grad.data * learning_rate)
-
-    out = net(x)
+### UNCOMMENT FOR TRAINING
+# N_epochs = 100
+# net = MLP()
+# x = Variable(X)
+# out = net(x)
+# target = Variable(Y)
+#
+# criterion = nn.MSELoss()
+#
+# for epoch in range(N_epochs):
+#     loss = criterion(out, target)
+#     print('epoch', epoch + 1, ', loss:', loss)
+#     net.zero_grad()  # reset gradients
+#     loss.backward()  # compute gradients
+#     # update weights
+#     learning_rate = 0.01
+#     for f in net.parameters():
+#         # for each parameter, take a small step in the opposite dir of the gradient
+#         # sub_ substracts in-place
+#         f.data.sub_(f.grad.data * learning_rate)
+#
+#     out = net(x)
+#
+# torch.save(net.state_dict(), 'models/mlp500')
