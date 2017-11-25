@@ -28,3 +28,23 @@ loss = criterion(out, target)
 
 print("output:", out)
 print("loss:", loss)
+
+net.zero_grad()  # reset gradients
+loss.backward()  # compute gradients
+
+# update weights
+learning_rate = 0.5
+for f in net.parameters():
+    # for each parameter, take a small step in the opposite dir of the gradient
+    # sub_ substracts in-place
+    f.data.sub_(f.grad.data * learning_rate)
+
+new_out = net(x)
+new_loss = criterion(new_out, target)
+
+print("target:", target)
+print("out:", out)
+print("new out (should be closer to target):", new_out)
+
+print("\nloss:", loss)
+print("new loss (should be lower):", new_loss)
