@@ -18,8 +18,8 @@ class MyDriver(Driver):
         command.accelerator = y[0]
 
         ### Uncomment to disable brakes for more fun
-        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 100 or \
-        # carstate.distance_raced < 80:
+        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
+        # carstate.distance_raced < 100:
         #     command.brake = 0
         # else:
         #     command.brake = y[1]
@@ -39,5 +39,9 @@ class MyDriver(Driver):
         self.accelerate(carstate, y[3], command)
         command.brake = y[1]
         ###
+
+        # log data
+        if self.data_logger:
+            self.data_logger.log(carstate, command)
 
         return command
