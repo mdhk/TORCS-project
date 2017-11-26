@@ -94,7 +94,7 @@ class Driver:
 
             command.accelerator = min(acceleration, 1)
 
-            if carstate.rpm > 8000:
+            if carstate.rpm > 7500:
                 command.gear = carstate.gear + 1
 
         # else:
