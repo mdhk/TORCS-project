@@ -11,7 +11,7 @@ def read_data(*csv_filepaths):
 	"""
 	all_data = np.concatenate([pd.read_csv(csv_file) for csv_file in csv_filepaths], axis=0)
 
-	Y = all_data[:, :4]
+	Y = all_data[:, :3]
 	X = all_data[:, 3:]
 
 	return TensorDataset(torch.FloatTensor(X), torch.FloatTensor(Y))

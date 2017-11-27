@@ -29,6 +29,9 @@ class neural_net(nn.Module):
         self.hidden2 = nn.Linear(self.N_hidden, self.N_hidden)
         self.out = nn.Linear(self.N_hidden, self.N_out)
 
+    def load(self, network):
+        self.load_state_dict(torch.load(network))
+
     def forward(self, x):
         x = F.relu(self.hidden(x))
         x = F.tanh(self.hidden2(x))
@@ -43,7 +46,7 @@ class neural_net(nn.Module):
 
 class MLP(neural_net):
     """
-    A normal multi layer perceptron. Might break because I rewrote it.
+    A normal multi layer perceptron. Might break because I restylized it.
     Contains one hidden layer
     """
     def train(self, N_epochs):
@@ -53,18 +56,19 @@ class MLP(neural_net):
         x = Variable(self.X)
         out = self(x)
         target = Variable(self.Y)
+        print(out.size(), target.size())
 
         ## choose a loss function, e.g. nn.MSELoss() or nn.NLLLoss()
         criterion = nn.MSELoss()
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.002)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.02)
 
         for epoch in range(1, N_epochs + 1):
             optimizer.zero_grad()
             loss = criterion(out, target)
 
             # print every 10th epoch
-            if epoch == 1 or epoch % 10 == 0:
-                print('epoch', epoch, ', loss:', loss)
+            # if epoch == 1 or epoch % 10 == 0:
+            print('epoch', epoch, ', loss:', loss)
 
             loss.backward()
             optimizer.step()
