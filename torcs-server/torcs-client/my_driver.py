@@ -16,7 +16,7 @@ class MyDriver(Driver):
         """
         Wat is dit
         """
-        x = np.asarray([[carstate.speed_x, carstate.distance_from_center, carstate.angle,
+        x = np.asarray([[carstate.speed_x*3.6, carstate.distance_from_center, carstate.angle,
              *carstate.distances_from_edge]])
         y = net.predict(x)
 
@@ -50,8 +50,8 @@ class MyDriver(Driver):
         # ##
 
         ## Uncomment to use only MLP predictions with small brake
-        self.accelerate(carstate, y[3], command)
-        command.brake = y[1]/10
+        self.accelerate(carstate, x[0], command)
+        # command.brake = y[1]
         ##
 
         # log data

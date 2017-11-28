@@ -8,6 +8,8 @@ import networks as nw
 
 net = nw.MLP(train_data.data_tensor, train_data.target_tensor, N_hidden=50)
 
-network = "models/mlp20"
-# net.load(network)
-net.train(20)
+epochs = 22
+network = "models/mlp" + str(epochs)
+net.load(network)
+if __name__ == "__main__":
+    net.train(epochs)
