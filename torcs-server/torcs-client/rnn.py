@@ -16,7 +16,8 @@ def read_data(*csv_filepaths):
 	return X, Y
 
 X, Y = read_data('train_data/aalborg.csv', 'train_data/alpine-1.csv', 'train_data/f-speedway.csv')
-print(X.shape, Y.shape)
+print(X[:10])
+
 
 
 		
