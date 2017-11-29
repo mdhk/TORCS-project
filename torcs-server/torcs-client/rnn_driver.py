@@ -4,21 +4,16 @@ import torch
 import networks as nw
 import numpy as np
 import torch.nn as nn
-from train import net
-
-# network = "models/mlp101"
-# net = nn.Module.load_state_dict(torch.load(network))
+from rnn_timesteps import recurrent_net
 
 class MyDriver(Driver):
     # Override the `drive` method to create your own driver
     ...
     def drive(self, carstate: State) -> Command:
-        """
-        Wat is dit
-        """
-        x = np.asarray([[carstate.speed_x*3.6, carstate.distance_from_center, carstate.angle,
+        x = np.asarray([[carstate.speed_x, carstate.distance_from_center, carstate.angle,
              *carstate.distances_from_edge]])
-        y = net.predict(x)
+        y = recurrent_net.predict(x)
+        print(y)
 
         command = Command()
 
@@ -37,11 +32,10 @@ class MyDriver(Driver):
         # ##
 
         # ## Uncomment to start fast, then drive like grandma
-        # if (carstate.speed_x * KMH_PER_MPS) < 100 and carstate.distance_raced < 50:
-        #     self.accelerate(carstate, 100, command)
-        # else:
-        #     self.accelerate(carstate, y[3], command)
-        #     command.brake = y[1]
+        if (carstate.speed_x * KMH_PER_MPS) < 100 and carstate.distance_raced < 50:
+            self.accelerate(carstate, 100, command)
+        else:
+            command.brake = y[1]
         # ##
 
         # ## Uncomment to use only MLP predictions (be like grandma always)
@@ -50,10 +44,8 @@ class MyDriver(Driver):
         # ##
 
         ## Uncomment to use only MLP predictions with small brake
-        self.accelerate(carstate, x[0], command)
-        # command.brake = y[1]
         # self.accelerate(carstate, y[3], command)
-        command.brake = y[1]/10
+        # command.brake = y[1]/10
         ##
 
         # log data

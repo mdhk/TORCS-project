@@ -18,11 +18,11 @@ class RNN(nn.Module):
 
         self.hidden = self.initHidden()
 
-    def forward(self, input, hidden):
-        combined = torch.cat((input, hidden), 1)
-        hidden = F.tanh(self.i2h(combined))
+    def forward(self, input):
+        combined = torch.cat((input, self.hidden), 1)
+        self.hidden = F.tanh(self.i2h(combined))
         output = F.tanh(self.i2o(combined))
-        return output, hidden
+        return output
 
     def predict(self, input):
         input = Variable(torch.FloatTensor(np.asarray(input)))
@@ -30,20 +30,17 @@ class RNN(nn.Module):
         return output.data.numpy()[0]
 
     def initHidden(self):
-        return Variable(torch.zeros(1, self.hidden_size))
+        return torch.zeros(1, self.hidden_size)
 
 
-def train_step(target_commands, training_sample, learning_rate, hidden):
+def train_step(target_commands, time_frame_data, learning_rate):
+    recurrent_net.hidden = recurrent_net.initHidden()
+
     recurrent_net.zero_grad()
 
-    for i in range(2):
-        output, hidden = recurrent_net(training_sample.unsqueeze(0), hidden)
-        print("output: ", i, output)
-        print("hidden: ", i, hidden)
+    for i in range(time_frame_data.size()[0]):
+        output = recurrent_net(time_frame_data[i].unsqueeze(0))
 
-    return output
-
-def backprop(output, target_commands):
     loss = criterion(output, target_commands)
     loss.backward()
 
@@ -51,7 +48,8 @@ def backprop(output, target_commands):
     for p in recurrent_net.parameters():
         p.data.add_(-learning_rate, p.grad.data)
 
-    return loss.data[0]
+    return output, loss.data[0]
+
 
 def split_data(data_tensor, n_frames):
     data_tensor = torch.cat((torch.zeros(n_frames-1, len(data_tensor[0])), \
@@ -61,34 +59,21 @@ def split_data(data_tensor, n_frames):
         train_samples.append(data_tensor[i-n_frames:i])
     return train_samples
 
-def train(data_tensor, target_tensor, learning_rate=0.005, print_every=100, epochs=1):
+def train(training_samples, target_tensor, learning_rate=0.005, print_every=100, epochs=1):
     total_loss = 0
-    hidden = recurrent_net.initHidden()
     for _ in range(epochs):
-        for i in range(len(data_tensor)):
-            outputs = []
-            for j in range(10):
-                output = train_step(Variable(target_tensor[j]), \
-                    Variable(data_tensor[j]), learning_rate, hidden)
-                outputs.append(output)
-            outputs = torch.cat(outputs, 0)
-            target_commands = target_tensor[i:i+10]
-            loss = backprop(outputs, Variable(target_commands))
+        for i in range(len(training_samples)):
+            output, loss = train_step(Variable(target_tensor[i]), \
+                Variable(training_samples[i]), learning_rate)
             total_loss += loss
             if i % print_every == 0:
                 print('loss:', total_loss/print_every)
                 total_loss = 0
 
-def warmup(data_tensor):
-    hidden = recurrent_net.initHidden()
-    for i in range(len(data_tensor)):
-        recurrent_net.zero_grad()
-        output, hidden = recurrent_net(Variable(data_tensor[i].unsqueeze(0)), hidden)
+training = True
 
-training = False
-
-learning_rate = 0.002
-n_frames = 1
+learning_rate = 0.5
+n_frames = 100
 n_hidden = 128
 n_input = 22
 n_output = 3
@@ -97,9 +82,8 @@ recurrent_net = RNN(n_input, n_hidden, n_output)
 
 if training:
     criterion = nn.MSELoss()
-    warmup(train_data.data_tensor[:2])
-    train(train_data.data_tensor[2:], train_data.target_tensor[2:], learning_rate=learning_rate)
+    training_samples = split_data(train_data.data_tensor, n_frames)
+    train(training_samples, train_data.target_tensor, learning_rate=learning_rate)
     torch.save(recurrent_net.state_dict(), 'models/rnn')
 else:
     recurrent_net.load_state_dict(torch.load('models/rnn'))
->>>>>>> 41f3c3b2066cdf5a410a097e8bfa078fd5a586ba
