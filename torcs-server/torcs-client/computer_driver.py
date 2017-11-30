@@ -16,7 +16,7 @@ class MyDriver(Driver):
         """
         Wat is dit
         """
-        x = np.asarray([[carstate.speed_x*3.6, carstate.distance_from_center, carstate.angle,
+        x = np.asarray([[carstate.speed_x*KMH_PER_MPS, carstate.distance_from_center, carstate.angle,
              *carstate.distances_from_edge]])
         y = net.predict(x)
 
@@ -27,13 +27,13 @@ class MyDriver(Driver):
         command.accelerator = y[0]
 
         # ## Uncomment to disable brakes for more fun
-        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
-        # carstate.distance_raced < 100:
-        #     command.brake = 0
-        # else:
-        #     command.brake = y[1]
-        #
-        # self.accelerate(carstate, y[3], command)
+        if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
+        carstate.distance_raced < 100:
+            command.brake = 0
+            self.accelerate(carstate, 95, command)
+        else:
+            command.brake = y[1]
+            self.accelerate(carstate, y[3], command)
         # ##
 
         # ## Uncomment to start fast, then drive like grandma
@@ -50,14 +50,13 @@ class MyDriver(Driver):
         # ##
 
         ## Uncomment to use only MLP predictions with small brake
-        self.accelerate(carstate, x[0], command)
+        # self.accelerate(carstate, carstate.speed_x, command)
         # command.brake = y[1]
         # self.accelerate(carstate, y[3], command)
-        command.brake = y[1]/10
+        # command.brake = y[1]/10
         ##
 
         # log data
-        if self.data_logger:
-            self.data_logger.log(carstate, command)
+        self.data_logger.log(carstate, command)
 
         return command

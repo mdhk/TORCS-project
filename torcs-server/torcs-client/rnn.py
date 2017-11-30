@@ -102,3 +102,4 @@ if training:
     torch.save(recurrent_net.state_dict(), 'models/rnn')
 else:
     recurrent_net.load_state_dict(torch.load('models/rnn'))
+>>>>>>> 41f3c3b2066cdf5a410a097e8bfa078fd5a586ba
