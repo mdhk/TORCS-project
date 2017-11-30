@@ -23,7 +23,6 @@ class MyDriver(Driver):
         'TRACK_EDGE_10', 'TRACK_EDGE_11', 'TRACK_EDGE_12', \
         'TRACK_EDGE_13', 'TRACK_EDGE_14', 'TRACK_EDGE_15', \
         'TRACK_EDGE_16', 'TRACK_EDGE_17', 'TRACK_EDGE_18']
-        print(len(columns))
         self.drivelog.write(','.join(columns))
         self.drivelog.write('\n')
         self.drivelog.flush()
@@ -80,9 +79,6 @@ class MyDriver(Driver):
         Optionally implement this event handler to clean up or write data
         before the application is stopped.
         """
-        # if self.data_logger:
-        #     self.data_logger.close()
-        #     self.data_logger = None
         if self.drivelog:
             self.drivelog.close()
             self.drivelog = None

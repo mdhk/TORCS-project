@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 from pytocl.main import main
 from human_driver import MyDriver
