@@ -1,15 +1,22 @@
-from data import *
+import dill
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import networks as nw
+import rnn_bm as rnnw
 
-net = nw.MLP(train_data.data_tensor, train_data.target_tensor, N_hidden=50)
+race_list = dill.load(open("train_data/race_list.pkl", "rb"))
 
-epochs = 22
-network = "models/mlp" + str(epochs)
-net.load(network)
+X, Y = race_list[0].data_tensor, race_list[0].target_tensor
+
+net = rnnw.RNN(input_size=len(X[1]),\
+               hidden_size=51, \
+               output_size=len(Y[1]),
+               n_layers=2)
+
+epochs = 100
+network = "models/lstm" + str(epochs)
+# net.load(network)
 if __name__ == "__main__":
-    net.train(epochs)
+    net.train(epochs, 0.1)

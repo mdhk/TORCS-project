@@ -3,36 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pandas as pd
-from torch.utils.data import Dataset, Dataloader
 from torch.autograd import Variable
 import numpy as np
 import os
 import random
-
-X = train_data.data_tensor
-Y = train_data.target_tensor
-
-rnn = nn.RNN(input_size=len(X[1]), hidden_size=20, num_layers=2)
-
-# input (seq_len, batch, input_size)
-input = Variable(torch.randn(5, 3, 10))
-
-# h_0 (num_layers * num_directions, batch, hidden_size)
-h0 = Variable(torch.randn(2, 3, 20))
-
-output, hn = rnn(input, h0)
-# print(output)
-
-# class OGDataset(Dataset):
-#     def __init__(self, csv_file):
-#         self.csv = pd.read_csv(csv_file)
-#
-#     def __len__(self):
-#         return len(self.csv)
-#
-#     def __getitem(self, idx):
-#
-#         return sample
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, n_layers=1):
@@ -42,15 +16,44 @@ class RNN(nn.Module):
         self.output_size = output_size
         self.n_layers = n_layers
 
+        self.drop = nn.Dropout(0.5)
+
         self.encoder = nn.Linear(input_size, hidden_size)
         self.rnn = nn.LSTM(hidden_size, hidden_size, n_layers)
         self.decoder = nn.Linear(hidden_size, output_size)
 
-    def forward(self, input, hidden):
-        input = self.encoder(input.view(1, -1))
-        output, hidden = self.rnn(input.view(1, 1, -1), hidden)
-        output = self.decoder(output.view(1, -1))
+        self.hidden = self.init_hidden()
+
+    def init_hidden(self):
+        # Before we've done anything, we dont have any hidden state.
+        # Refer to the Pytorch documentation to see exactly
+        # why they have this dimensionality.
+        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
+        return (autograd.Variable(torch.zeros(1, 1, self.hidden_size)),
+                autograd.Variable(torch.zeros(1, 1, self.hidden_size)))
+
+    def load(self, network):
+        self.load_state_dict(torch.load(network))
+
+    def forward(self, input):
+        print("0")
+        print(input)
+        pef = self.encoder(input)
+        print(pef)
+        output, hidden = self.rnn(pef.view(1, 1, -1), self.hidden)
+        print("2")
+        output = self.decoder(output)
+        print("3")
         return output, hidden
+    # def forward(self, input):
+    #     print("0")
+    #     emb = self.drop(self.encoder(input))
+    #     print("1")
+    #     output, hidden = self.rnn(emb, hidden)
+    #     print("2")
+    #     output = self.decoder(output.view(1, -1))
+    #     print("3")
+    #     return output, hidden
 
     def init_hidden(self):
         return Variable(torch.zeros(self.n_layers, 1, self.hidden_size))
@@ -66,11 +69,14 @@ class RNN(nn.Module):
     def get_random_data(self, curdir):
         name = "{}/bram_logs".format(curdir)
         length = len([name for name in os.listdir('.') if os.path.isfile(name)])
-        i = random.randint(0, length)
-        return all_races[i].data_tensor, all_races[i].target_tensor
+        race_list = dill.load(open("train_data/race_list.pkl", "rb"))
+        i = random.randint(0, len(race_list))
+        print(len(race_list[i].data_tensor), len(race_list[i].target_tensor),\
+              len(race_list[i].data_tensor) * len(race_list[i].target_tensor))
+
+        return race_list[i].data_tensor, race_list[i].target_tensor
 
     def train(self, num_epochs, learning_rate):
-        self.train()
 
         # Get current directory
         curdir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
@@ -84,8 +90,14 @@ class RNN(nn.Module):
             data, targets = self.get_random_data(curdir)
 
             optimizer.zero_grad()
-            outputs, hidden = self(data)
+            print(len(data) * len(data[0]), len(targets[0]))
+            outputs, hidden = self(Variable(data))
+            print("HOOR?")
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
             losses[epoch] += loss.data[0]
+
+            hidden = self.repackage_hidden(hidden)
+
+        torch.save(self.state_dict(), 'models/lstm' + str(N_epochs))
