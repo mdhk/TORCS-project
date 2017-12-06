@@ -10,11 +10,18 @@ class MyDriver(Driver):
     def __init__(self, logdata=False):
         self.last_steer = 0.
         date_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
-        filename = './drivelogs/drivelog-_{}.csv'.format(date_time)
+        filename = './drivelogs/drivelog-HUMAN-_{}.csv'.format(date_time)
         self.drivelog = open(filename, 'w', 10)
         columns = ['ACCELERATOR', 'BRAKE', 'GEAR', 'STEERING', 'ANGLE', \
         'CURRENT_LAP_TIME', 'DAMAGE', 'DISTANCE_FROM_START', \
-        'DISTANCE_RACED', 'LAST_LAP_TIME', 'OPPONENTS', 'RACE_POSITION', \
+        'DISTANCE_RACED', 'LAST_LAP_TIME', 'OPPONENT_1', 'OPPONENT_2', \
+        'OPPONENT_3', 'OPPONENT_4', 'OPPONENT_5', 'OPPONENT_6', 'OPPONENT_7', \
+        'OPPONENT_8', 'OPPONENT_9', 'OPPONENT_10', 'OPPONENT_11', 'OPPONENT_12', \
+        'OPPONENT_13', 'OPPONENT_14', 'OPPONENT_15', 'OPPONENT_16', 'OPPONENT_18', \
+        'OPPONENT_19', 'OPPONENT_20', 'OPPONENT_21', 'OPPONENT_22', 'OPPONENT_23', \
+        'OPPONENT_24', 'OPPONENT_25', 'OPPONENT_26', 'OPPONENT_27', 'OPPONENT_28', \
+        'OPPONENT_29', 'OPPONENT_30', 'OPPONENT_31', 'OPPONENT_32', 'OPPONENT_33', \
+        'OPPONENT_34', 'OPPONENT_35', 'OPPONENT_36', 'RACE_POSITION', \
         'RPM', 'SPEED_X', 'SPEED_Y', 'SPEED_Z', 'DISTANCE_FROM_CENTER', \
         'CENTR_OF_MASS_DISTANCE', 'WHEEL_V_1', 'WHEEL_V_2', 'WHEEL_V_3', \
         'WHEEL_V_4', 'TRACK_EDGE_0', 'TRACK_EDGE_1', 'TRACK_EDGE_2', \
@@ -89,12 +96,10 @@ class MyDriver(Driver):
                 command.brake = 1
                 command.accelerator +=1
 
-
-
         drivelog_data = [command.accelerator, command.brake, command.gear, \
         command.steering, carstate.angle, carstate.current_lap_time, \
         carstate.damage, carstate.distance_from_start, carstate.distance_raced,
-        carstate.last_lap_time, carstate.opponents, carstate.race_position, \
+        carstate.last_lap_time, *carstate.opponents, carstate.race_position, \
         carstate.rpm, carstate.speed_x, carstate.speed_y, carstate.speed_z, \
         carstate.distance_from_center, carstate.z, *carstate.wheel_velocities, \
         *carstate.distances_from_edge]
