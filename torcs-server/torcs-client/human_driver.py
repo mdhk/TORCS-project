@@ -31,24 +31,46 @@ class MyDriver(Driver):
     def drive(self, carstate: State) -> Command:
         accelerator, brake, steering = (0., 0., 0.)
         gear = carstate.gear
+        # print(carstate.sensor_dict)
+
+        command = Command()
 
         if keyboard.is_pressed('up'):
-            accelerator += 1
+            accelerator += 10000
         if keyboard.is_pressed('down'):
             brake += 1
         if keyboard.is_pressed('left'):
-            steering = self.last_steer + 0.1
+            steering = self.last_steer + 0.04
         if keyboard.is_pressed('right'):
-            steering = self.last_steer - 0.1
+            steering = self.last_steer - 0.04
+
+        if keyboard.is_pressed('1'):
+            gear = 1
+        if keyboard.is_pressed('2'):
+            gear = 2
+        if keyboard.is_pressed('3'):
+            gear = 3
+        if keyboard.is_pressed('4'):
+            gear = 4
+        if keyboard.is_pressed('5'):
+            gear = 5
+        if keyboard.is_pressed('6'):
+            gear = 6
+        if keyboard.is_pressed('q'):
+            gear = carstate.gear - 1
+        if keyboard.is_pressed('w'):
+            gear += carstate.gear + 1
 
         self.last_steer = steering
 
-        if carstate.rpm > 7000:
-            gear += 1
+        if carstate.rpm > 9000:
+            gear = carstate.gear + 1
         elif carstate.rpm < 2500 and gear >= 0:
-            gear -= 1
+            gear = carstate.gear - 1
 
-        command = Command()
+        # if not carstate.gear in [-1, 1, 2,3,4,5,6]:
+        #     gear = 1
+
         command.accelerator = accelerator
         command.brake = brake
         command.steering = steering
@@ -56,8 +78,19 @@ class MyDriver(Driver):
 
         if not command.gear:
             command.gear = carstate.gear or 1
-        if command.gear < 1:
-            command.gear = 1
+        # if command.gear < 1:
+        #     command.gear = 1
+        if carstate.speed_x <= 0:
+            if keyboard.is_pressed('down'):
+                command.gear = -1
+                command.brake = 0
+                command.accelerator +=1
+            elif keyboard.is_pressed('up') and carstate.speed_x < -1:
+                command.gear = 1
+                command.brake = 1
+                command.accelerator +=1
+
+
 
         drivelog_data = [command.accelerator, command.brake, command.gear, \
         command.steering, carstate.angle, carstate.current_lap_time, \
