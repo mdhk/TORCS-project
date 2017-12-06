@@ -1,4 +1,4 @@
-from data import train_data
+from load_data import *
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +6,8 @@ import pandas as pd
 from torch.utils.data import Dataset, Dataloader
 from torch.autograd import Variable
 import numpy as np
+import os
+import random
 
 X = train_data.data_tensor
 Y = train_data.target_tensor
@@ -40,9 +42,9 @@ class RNN(nn.Module):
         self.output_size = output_size
         self.n_layers = n_layers
 
-        self.encoder = nn.RNN(input_size, hidden_size)
-        self.rnn = nn.RNN(hidden_size, hidden_size, n_layers)
-        self.decoder = nn.RNN(hidden_size, output_size)
+        self.encoder = nn.Linear(input_size, hidden_size)
+        self.rnn = nn.LSTM(hidden_size, hidden_size, n_layers)
+        self.decoder = nn.Linear(hidden_size, output_size)
 
     def forward(self, input, hidden):
         input = self.encoder(input.view(1, -1))
@@ -53,13 +55,37 @@ class RNN(nn.Module):
     def init_hidden(self):
         return Variable(torch.zeros(self.n_layers, 1, self.hidden_size))
 
+    def repackage_hidden(self, h):
+        """Wraps hidden states in new Variables,
+        to detach them from their history."""
+        if type(h) == Variable:
+            return Variable(h.data)
+        else:
+            return tuple(repackage_hidden(v) for v in h)
+
+    def get_random_data(self, curdir):
+        name = "{}/bram_logs".format(curdir)
+        length = len([name for name in os.listdir('.') if os.path.isfile(name)])
+        i = random.randint(0, length)
+        return all_races[i].data_tensor, all_races[i].target_tensor
+
     def train(self, num_epochs, learning_rate):
-        criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        self.train()
+
+        # Get current directory
+        curdir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.SGD(self.parameters(), lr=learning_rate)
+        losses = np.zeros(num_epochs)
+
         for epoch in range(num_epochs):
-            for line in file:
+
+            data, targets = self.get_random_data(curdir)
+
             optimizer.zero_grad()
-            outputs = self(???)
-            loss = criterion(outputs, target)
+            outputs, hidden = self(data)
+            loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
+            losses[epoch] += loss.data[0]
