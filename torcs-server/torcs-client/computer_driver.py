@@ -5,14 +5,10 @@ import torch
 import networks as nw
 import numpy as np
 import torch.nn as nn
-<<<<<<< HEAD
 import pickleshare
 import networks as nw
 from train_mlp import net
 from load_data import mean_normalisation
-=======
-from train import net
->>>>>>> e1194ca9e618d71ca88eb94b9bd34eff87addbc8
 
 # network = "models/mlp101"
 # net = nn.Module.load_state_dict(torch.load(network))
