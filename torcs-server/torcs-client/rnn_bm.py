@@ -24,22 +24,14 @@ class RNN(nn.Module):
 
         self.hidden = self.init_hidden()
 
-    def init_hidden(self):
-        # Before we've done anything, we dont have any hidden state.
-        # Refer to the Pytorch documentation to see exactly
-        # why they have this dimensionality.
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (autograd.Variable(torch.zeros(1, 1, self.hidden_size)),
-                autograd.Variable(torch.zeros(1, 1, self.hidden_size)))
-
     def load(self, network):
         self.load_state_dict(torch.load(network))
 
     def forward(self, input):
         print("0")
         print(input)
-        pef = self.encoder(input)
-        print(pef)
+        pef = self.encoder(input.view(1,-1))
+        print("1\n", pef)
         output, hidden = self.rnn(pef.view(1, 1, -1), self.hidden)
         print("2")
         output = self.decoder(output)
@@ -89,15 +81,18 @@ class RNN(nn.Module):
 
             data, targets = self.get_random_data(curdir)
 
-            optimizer.zero_grad()
-            print(len(data) * len(data[0]), len(targets[0]))
-            outputs, hidden = self(Variable(data))
-            print("HOOR?")
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
-            losses[epoch] += loss.data[0]
+            hidden = self.init_hidden()
 
-            hidden = self.repackage_hidden(hidden)
+            for line in range(len(data)):
+
+
+                optimizer.zero_grad()
+                outputs, hidden = self(data[line])
+                print("HOOR?")
+                loss = criterion(outputs, targets[line])
+                loss.backward()
+                optimizer.step()
+                losses[epoch] += loss.data[0]
+
 
         torch.save(self.state_dict(), 'models/lstm' + str(N_epochs))

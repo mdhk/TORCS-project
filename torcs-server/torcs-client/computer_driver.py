@@ -2,12 +2,17 @@ from pytocl.driver import Driver
 from pytocl.car import State, Command, KMH_PER_MPS
 import datetime
 import torch
+import networks as nw
 import numpy as np
 import torch.nn as nn
+<<<<<<< HEAD
 import pickleshare
 import networks as nw
 from train_mlp import net
 from load_data import mean_normalisation
+=======
+from train import net
+>>>>>>> e1194ca9e618d71ca88eb94b9bd34eff87addbc8
 
 # network = "models/mlp101"
 # net = nn.Module.load_state_dict(torch.load(network))
@@ -15,9 +20,8 @@ from load_data import mean_normalisation
 class MyDriver(Driver):
     # Override the `drive` method to create your own driver
     ...
-    def __init__(self, logdata=False, swarm=False):
+    def __init__(self, logdata=False):
         self.last_steer = 0.
-        self.swarm = swarm
         date_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
         filename = './drivelogs/drivelog-COMPUTER-_{}.csv'.format(date_time)
         self.drivelog = open(filename, 'w', 10)
@@ -61,18 +65,18 @@ class MyDriver(Driver):
 
         command = Command()
 
-        self.steer(carstate, y[3], command)
+        self.steer(carstate, y[2], command)
+
         command.accelerator = y[0]
-        command.brake = y[1]
-        command.gear = y[2]
+
         # ## Uncomment to disable brakes for more fun
-        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
-        # carstate.distance_raced < 100:
-        #     command.brake = 0
-        #     self.accelerate(carstate, 95, command)
-        # else:
-        #     command.brake = y[1]
-        #     self.accelerate(carstate, y[3], command)
+        if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
+        carstate.distance_raced < 100:
+            command.brake = 0
+            self.accelerate(carstate, 95, command)
+        else:
+            command.brake = y[1]
+            self.accelerate(carstate, y[3], command)
         # ##
 
         # ## Uncomment to start fast, then drive like grandma
@@ -94,24 +98,6 @@ class MyDriver(Driver):
         # self.accelerate(carstate, y[3], command)
         # command.brake = y[1]/10
         ##
-
-        ############ SWARM THINGS ############
-        if self.swarm:
-            db = pickleshare.PickleShareDB('communication_db')
-            if not ('first_car' in db and 'second_car' in db):
-                db['first_car'] = carstate.race_position
-                db['second_car'] = None
-            elif db['second_car'] is None:
-                db['second_car'] = carstate.race_position
-
-            if not (db['first_car'] < db['second_car']):
-                first_pos, second_pos = db['second_car'], db['first_car']
-                db['first_car'], db['second_car'] = first_pos, second_pos
-
-            # if self.this_car(carstate) == 'first':
-            #     ### code for first car ###
-            # elif self.this_car(carstate) == 'second':
-            #     ### code for second car ###
 
         # log data
         drivelog_data = [command.accelerator, command.brake, command.gear, \
@@ -138,10 +124,3 @@ class MyDriver(Driver):
         if self.drivelog:
             self.drivelog.close()
             self.drivelog = None
-
-    def this_car(self, carstate: State):
-        db = pickleshare.PickleShareDB('communication_db')
-        if carstate.race_position == db['first_car']:
-            return 'first'
-        elif carstate.race_position == db['second_car']:
-            return 'second'

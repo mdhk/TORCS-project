@@ -8,26 +8,39 @@ class MyDriver(Driver):
     # Override the `drive` method to create your own driver
     ...
     def drive(self, carstate: State) -> Command:
+        if (1==2):
+           print("haha")
 
         command = Command()
+        a = 0
+        self.accelerate(carstate, 10000, command)
+        if carstate.speed_x < 10 and abs(carstate.angle) > 10:
+            print("ik", carstate.distance_from_center, carstate.angle)
+            if carstate.distance_from_center < 0 and carstate.angle > 0:
+                command.gear = -1
+                a = 1
+            if carstate.distance_from_center > 0 and carstate.angle < 0:
+                command.gear = -1
+                a = 1
+            # command.accelerator = 1000
+            # self.steer(carstate, 0.0, command
 
-        away = False
-        for state in carstate.distances_from_edge:
-            if state < 1:
-                away = True
-        if 1==2:
-            print("hoi")
-        else:
+
+        if a == 0:
+            print("jij")
             # command = Command()
 
-            self.steer(carstate, 0.0, command)
 
-            self.accelerate(carstate, 10000, command)
+            if carstate.gear <= 0:
+                carstate.gear = 1
+            # self.accelerate(carstate, 10000, command)
 
             # log data
             if self.data_logger:
                 self.data_logger.log(carstate, command)
 
+
+        self.steer(carstate, 0.0, command)
         return command
 
     # def steer(self, carstate, target_track_pos, command):
