@@ -1,11 +1,12 @@
 from pytocl.driver import Driver
 from pytocl.car import State, Command, KMH_PER_MPS
+import datetime
 import torch
 import numpy as np
 import torch.nn as nn
 import pickleshare
 import networks as nw
-from train import net
+from train_mlp import net
 from load_data import mean_normalisation
 
 # network = "models/mlp101"
@@ -43,8 +44,7 @@ class MyDriver(Driver):
         self.drivelog.flush()
 
     def drive(self, carstate: State):
-        data = np.asarray([[command.accelerator, command.brake, command.gear, \
-        command.steering, carstate.angle, carstate.current_lap_time, \
+        data = np.asarray([[carstate.angle, carstate.current_lap_time, \
         carstate.damage, carstate.distance_from_start, carstate.distance_raced,
         carstate.last_lap_time, *carstate.opponents, carstate.race_position, \
         carstate.rpm, carstate.speed_x, carstate.speed_y, carstate.speed_z, \
@@ -55,7 +55,8 @@ class MyDriver(Driver):
             normalised_column = mean_normalisation(data_column)
             data.T[i] = normalised_column
 
-        x = torch.FloatTensor(data)
+        print(len(data.T))
+        x = data
         y = net.predict(x)
 
         command = Command()
