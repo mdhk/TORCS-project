@@ -6,6 +6,7 @@ import torch.nn as nn
 import pickleshare
 import networks as nw
 from train import net
+from load_data import mean_normalisation
 
 # network = "models/mlp101"
 # net = nn.Module.load_state_dict(torch.load(network))
@@ -13,7 +14,7 @@ from train import net
 class MyDriver(Driver):
     # Override the `drive` method to create your own driver
     ...
-    def __init__(self, logdata=False, swarm=True):
+    def __init__(self, logdata=False, swarm=False):
         self.last_steer = 0.
         self.swarm = swarm
         date_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
@@ -42,24 +43,35 @@ class MyDriver(Driver):
         self.drivelog.flush()
 
     def drive(self, carstate: State):
-        x = np.asarray([[carstate.speed_x*KMH_PER_MPS, carstate.distance_from_center, carstate.angle,
-             *carstate.distances_from_edge]])
+        data = np.asarray([[command.accelerator, command.brake, command.gear, \
+        command.steering, carstate.angle, carstate.current_lap_time, \
+        carstate.damage, carstate.distance_from_start, carstate.distance_raced,
+        carstate.last_lap_time, *carstate.opponents, carstate.race_position, \
+        carstate.rpm, carstate.speed_x, carstate.speed_y, carstate.speed_z, \
+        carstate.distance_from_center, carstate.z, *carstate.wheel_velocities, \
+        *carstate.distances_from_edge]])
+
+        for i, data_column in enumerate(data.T):
+            normalised_column = mean_normalisation(data_column)
+            data.T[i] = normalised_column
+
+        x = torch.FloatTensor(data)
         y = net.predict(x)
 
         command = Command()
 
-        self.steer(carstate, y[2], command)
-
+        self.steer(carstate, y[3], command)
         command.accelerator = y[0]
-
+        command.brake = y[1]
+        command.gear = y[2]
         # ## Uncomment to disable brakes for more fun
-        if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
-        carstate.distance_raced < 100:
-            command.brake = 0
-            self.accelerate(carstate, 95, command)
-        else:
-            command.brake = y[1]
-            self.accelerate(carstate, y[3], command)
+        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
+        # carstate.distance_raced < 100:
+        #     command.brake = 0
+        #     self.accelerate(carstate, 95, command)
+        # else:
+        #     command.brake = y[1]
+        #     self.accelerate(carstate, y[3], command)
         # ##
 
         # ## Uncomment to start fast, then drive like grandma
@@ -90,13 +102,15 @@ class MyDriver(Driver):
                 db['second_car'] = None
             elif db['second_car'] is None:
                 db['second_car'] = carstate.race_position
+
             if not (db['first_car'] < db['second_car']):
                 first_pos, second_pos = db['second_car'], db['first_car']
                 db['first_car'], db['second_car'] = first_pos, second_pos
-            if self.this_car(carstate) == 'first':
-                ### code for first car ###
-            elif self.this_car(carstate) == 'second':
-                ### code for second car ###
+
+            # if self.this_car(carstate) == 'first':
+            #     ### code for first car ###
+            # elif self.this_car(carstate) == 'second':
+            #     ### code for second car ###
 
         # log data
         drivelog_data = [command.accelerator, command.brake, command.gear, \

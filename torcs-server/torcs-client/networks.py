@@ -1,4 +1,3 @@
-from data import *
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -60,7 +59,7 @@ class MLP(neural_net):
 
         ## choose a loss function, e.g. nn.MSELoss() or nn.NLLLoss()
         criterion = nn.MSELoss()
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.02)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.05)
 
         for epoch in range(1, N_epochs + 1):
             optimizer.zero_grad()
