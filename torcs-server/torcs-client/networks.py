@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
+import cloudpickle
+stats = cloudpickle.load(open('train_data/stats.pkl', 'rb'))
 
 """
 Geen uitvoerende code binnen dit bestand!
@@ -38,8 +40,10 @@ class neural_net(nn.Module):
         return x
 
     def predict(self, x):
-        x = Variable(torch.FloatTensor(np.asarray(x)))
+        normalised_x = (x - stats['means'])/stats['stds']
+        x = Variable(torch.FloatTensor(np.asarray(normalised_x)))
         y = self.forward(x).data.numpy()[0]
+        #print(normalised_x, '\n', y)
         return y
 
 
@@ -59,7 +63,7 @@ class MLP(neural_net):
 
         ## choose a loss function, e.g. nn.MSELoss() or nn.NLLLoss()
         criterion = nn.MSELoss()
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.01)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.02)
 
         for epoch in range(1, N_epochs + 1):
             optimizer.zero_grad()

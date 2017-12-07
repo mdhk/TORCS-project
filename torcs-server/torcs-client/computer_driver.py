@@ -8,7 +8,6 @@ import torch.nn as nn
 import pickleshare
 import networks as nw
 from train_mlp import net
-from load_data import mean_normalisation
 
 # network = "models/mlp101"
 # net = nn.Module.load_state_dict(torch.load(network))
@@ -61,16 +60,13 @@ class MyDriver(Driver):
 
         x = data
         y = net.predict(x)
-        print(x)
-        print(y)
 
         command = Command()
 
-
         self.steer(carstate, y[3], command)
-        # command.steering = y[3]
+        command.steering /= 10
 
-        # command.accelerator = y[0]
+        #command.accelerator = y[0]
 
         # ## Uncomment to disable brakes for more fun
         # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
