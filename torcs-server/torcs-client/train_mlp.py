@@ -15,7 +15,7 @@ Y = torch.FloatTensor(np.concatenate([tensordataset.target_tensor.numpy() \
 train_data = TensorDataset(X, Y)
 net = nw.MLP(train_data.data_tensor, train_data.target_tensor, N_hidden=50)
 
-epochs = 50
+epochs = 501
 # network = "models/mlp" + str(epochs)
 # net.load(network)
 if __name__ == "__main__":

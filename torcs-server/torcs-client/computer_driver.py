@@ -15,8 +15,9 @@ from load_data import mean_normalisation
 
 class MyDriver(Driver):
     # Override the `drive` method to create your own driver
-    ...
+
     def __init__(self, logdata=False):
+        super(MyDriver, self).__init__()
         self.last_steer = 0.
         date_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%m-%S')
         filename = './drivelogs/drivelog-COMPUTER-_{}.csv'.format(date_time)
@@ -43,6 +44,7 @@ class MyDriver(Driver):
         self.drivelog.write('\n')
         self.drivelog.flush()
 
+    ...
     def drive(self, carstate: State):
         data = np.asarray([[carstate.angle, carstate.current_lap_time, \
         carstate.damage, carstate.distance_from_start, carstate.distance_raced,
@@ -50,29 +52,34 @@ class MyDriver(Driver):
         carstate.rpm, carstate.speed_x, carstate.speed_y, carstate.speed_z, \
         carstate.distance_from_center, carstate.z, *carstate.wheel_velocities, \
         *carstate.distances_from_edge]])
+        # print(data)
 
-        for i, data_column in enumerate(data.T):
-            normalised_column = mean_normalisation(data_column)
-            data.T[i] = normalised_column
+        # for i, data_column in enumerate(data.T):
+        #     normalised_column = mean_normalisation(data_column)
+        #     data.T[i] = normalised_column
 
-        print(len(data.T))
+
         x = data
         y = net.predict(x)
+        print(x)
+        print(y)
 
         command = Command()
 
-        self.steer(carstate, y[2], command)
 
-        command.accelerator = y[0]
+        self.steer(carstate, y[3], command)
+        # command.steering = y[3]
+
+        # command.accelerator = y[0]
 
         # ## Uncomment to disable brakes for more fun
-        if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
-        carstate.distance_raced < 100:
-            command.brake = 0
-            self.accelerate(carstate, 95, command)
-        else:
-            command.brake = y[1]
-            self.accelerate(carstate, y[3], command)
+        # if np.abs(y[1]) <= 0.03 or (carstate.speed_x * KMH_PER_MPS) < 90 or \
+        # carstate.distance_raced < 100:
+        #     command.brake = 0
+        #     self.accelerateno now (carstate, 95, command)
+        # else:
+        #     command.brake = y[1]
+        #     self.accelerate(carstate, y[3], command)
         # ##
 
         # ## Uncomment to start fast, then drive like grandma
@@ -83,18 +90,36 @@ class MyDriver(Driver):
         #     command.brake = y[1]
         # ##
 
-        # ## Uncomment to use only MLP predictions (be like grandma always)
-        # self.accelerate(carstate, y[3], command)
+        ## Uncomment to use only MLP predictions (be like grandma always)
+        # command.steer = y[2]
+        self.accelerate(carstate, 10000, command)
+        # if carstate.gear <= 0 or y[2] <= 0.99:
+        #     print("1", carstate.gear, y[2])
+        #     command.gear = 1
+        # else:
+        #     print("2", carstate.gear, y[2])
+        #     command.gear = y[2]
+        # command.gear = 1
         # command.brake = y[1]
-        # ##
-
-        ## Uncomment to use only MLP predictions with small brake
-        # self.accelerate(carstate, carstate.speed_x, command)
-        # command.brake = y[1]
-        # self.accelerate(carstate, y[3], command)
-        # command.brake = y[1]/10
         ##
 
+        # Uncomment to use only MLP predictions with small brake
+        # self.accelerate(carstate, carstate.speed_x, command)
+        # command.brake = 0
+        # self.accelerate(carstate, y[3], command)
+        command.brake = y[1]/10
+        #
+
+        if carstate.gear <= 0:
+            command.gear = 1
+        if abs(carstate.speed_x) < 10 and abs(carstate.angle) > 10:
+            print("ik", carstate.distance_from_center, carstate.angle)
+            if carstate.distance_from_center < 0 and carstate.angle > 0:
+                command.gear = -1
+                a = 1
+            if carstate.distance_from_center > 0 and carstate.angle < 0:
+                command.gear = -1
+                a = 1
         # log data
         drivelog_data = [command.accelerator, command.brake, command.gear, \
         command.steering, carstate.angle, carstate.current_lap_time, \
