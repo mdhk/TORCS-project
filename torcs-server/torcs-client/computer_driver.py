@@ -68,6 +68,7 @@ class MyDriver(Driver):
 
 
         self.steer(carstate, y[3], command)
+        command.steering /= 10
         # command.steering = y[3]
 
         # command.accelerator = y[0]
@@ -92,7 +93,7 @@ class MyDriver(Driver):
 
         ## Uncomment to use only MLP predictions (be like grandma always)
         # command.steer = y[2]
-        self.accelerate(carstate, 10000, command)
+        self.accelerate(carstate, 150, command)
         # if carstate.gear <= 0 or y[2] <= 0.99:
         #     print("1", carstate.gear, y[2])
         #     command.gear = 1

@@ -59,7 +59,7 @@ class MLP(neural_net):
 
         ## choose a loss function, e.g. nn.MSELoss() or nn.NLLLoss()
         criterion = nn.MSELoss()
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.01)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.003)
 
         for epoch in range(1, N_epochs + 1):
             optimizer.zero_grad()
