@@ -62,9 +62,30 @@ class MyDriver(Driver):
         y = net.predict(x)
 
         command = Command()
-
         self.steer(carstate, y[3], command)
-        command.steering /= 10
+
+        if self.swarm:
+        db = pickleshare.PickleShareDB('communication_db')
+        if not ('first_car' in db and 'second_car' in db):
+            db['first_car'] = carstate.race_position
+            db['second_car'] = None
+        elif db['second_car'] is None:
+            db['second_car'] = carstate.race_position
+        if not (db['first_car'] < db['second_car']):
+            first_pos, second_pos = db['second_car'], db['first_car']
+            db['first_car'], db['second_car'] = first_pos, second_pos
+        if self.this_car(carstate) == 'first':
+            command.steering /= 10
+            command.brake = y[1]/10
+        elif self.this_car(carstate) == 'second':
+            command.steering /= 5
+            command.brake = y[1]/100
+        else:
+            command.steering /= 10
+            command.brake = y[1]/10
+
+        self.accelerate(carstate, 150, command)
+
         # command.steering = y[3]
 
         #command.accelerator = y[0]
@@ -89,7 +110,7 @@ class MyDriver(Driver):
 
         ## Uncomment to use only MLP predictions (be like grandma always)
         # command.steer = y[2]
-        self.accelerate(carstate, 150, command)
+        #        self.accelerate(carstate, 150, command)
         # if carstate.gear <= 0 or y[2] <= 0.99:
         #     print("1", carstate.gear, y[2])
         #     command.gear = 1
@@ -104,7 +125,7 @@ class MyDriver(Driver):
         # self.accelerate(carstate, carstate.speed_x, command)
         # command.brake = 0
         # self.accelerate(carstate, y[3], command)
-        command.brake = y[1]/10
+
         #
 
         if carstate.gear <= 0:
@@ -117,6 +138,7 @@ class MyDriver(Driver):
             if carstate.distance_from_center > 0 and carstate.angle < 0:
                 command.gear = -1
                 a = 1
+
         # log data
         drivelog_data = [command.accelerator, command.brake, command.gear, \
         command.steering, carstate.angle, carstate.current_lap_time, \
