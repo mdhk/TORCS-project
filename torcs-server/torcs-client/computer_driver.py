@@ -8,6 +8,8 @@ import torch.nn as nn
 import pickleshare
 import networks as nw
 from train_mlp import net
+import time
+import math
 
 # network = "models/mlp101"
 # net = nn.Module.load_state_dict(torch.load(network))
@@ -42,6 +44,8 @@ class MyDriver(Driver):
         self.drivelog.write(','.join(columns))
         self.drivelog.write('\n')
         self.drivelog.flush()
+        self.heur = False
+        self.is_counting = False
 
     ...
     def drive(self, carstate: State):
@@ -64,7 +68,8 @@ class MyDriver(Driver):
         command = Command()
 
         self.steer(carstate, y[3], command)
-        command.steering /= 10
+        command.steering *= 10/((abs(carstate.speed_x)+1)**1.3)
+        # command.steering = min(command.steering, 0.7)
         # command.steering = y[3]
 
         #command.accelerator = y[0]
@@ -89,7 +94,7 @@ class MyDriver(Driver):
 
         ## Uncomment to use only MLP predictions (be like grandma always)
         # command.steer = y[2]
-        self.accelerate(carstate, 150, command)
+        self.accelerate(carstate, 1110, command)
         # if carstate.gear <= 0 or y[2] <= 0.99:
         #     print("1", carstate.gear, y[2])
         #     command.gear = 1
@@ -109,15 +114,34 @@ class MyDriver(Driver):
 
         if carstate.gear <= 0:
             command.gear = 1
-        if abs(carstate.speed_x) < 10 and abs(carstate.angle) > 10:
-            print("ik", carstate.distance_from_center, carstate.angle)
-            if carstate.distance_from_center < 0 and carstate.angle > 0:
+
+        if carstate.speed_x < 2 or self.heur:
+            if not self.is_counting:
+                print("start counting", time.time())
+                self.counter = time.monotonic()
+                self.is_counting = True
+            elif time.monotonic() - self.counter >= 5.0:
+                print("In heuristiek", time.time())
+                self.heur = True
+
                 command.gear = -1
-                a = 1
-            if carstate.distance_from_center > 0 and carstate.angle < 0:
-                command.gear = -1
-                a = 1
-        # log data
+
+                if (carstate.distance_from_center > 0 and carstate.angle > 0)\
+                or (carstate.distance_from_center < 0 and carstate.angle < 0):
+                    self.is_counting = False
+                    self.heur = False
+        else:
+            self.is_counting = False
+
+        # if abs(carstate.speed_x) < 10 and abs(carstate.angle) > 10:
+        #     print("ik", carstate.distance_from_center, carstate.angle)
+        #     if carstate.distance_from_center < 0 and carstate.angle > 0:
+        #         command.gear = -1
+        #         a = 1
+        #     if carstate.distance_from_center > 0 and carstate.angle < 0:
+        #         command.gear = -1
+        #         a = 1
+        # # log data
         drivelog_data = [command.accelerator, command.brake, command.gear, \
         command.steering, carstate.angle, carstate.current_lap_time, \
         carstate.damage, carstate.distance_from_start, carstate.distance_raced,
@@ -130,6 +154,44 @@ class MyDriver(Driver):
             self.drivelog.write(','.join([str(value) for value in drivelog_data]))
             self.drivelog.write('\n')
 
+        return command
+
+    def accelerate(self, carstate, target_speed, command):
+        # compensate engine deceleration, but invisible to controller to
+        # prevent braking:
+        speed_error = 1.0025 * target_speed * 3.6 - carstate.speed_x
+        acceleration = self.acceleration_ctrl.control(
+            speed_error,
+            carstate.current_lap_time
+        )
+
+        # stabilize use of gas and brake:
+        acceleration = math.pow(acceleration, 3)
+
+        if acceleration > 0:
+            # if abs(carstate.distance_from_center) >= 1:
+            #     # off track, reduced grip:
+            #     acceleration = min(0.4, acceleration)
+
+            command.accelerator = min(acceleration, 1)
+
+            if carstate.rpm > 7500:
+                command.gear = carstate.gear + 1
+
+        else:
+            command.brake = min(-acceleration, 1)
+
+        if carstate.rpm < 2500:
+            command.gear = carstate.gear - 1
+
+        if not command.gear:
+            command.gear = carstate.gear or 1
+
+    def heuristic(self, command):
+        if carstate.distance_from_center < 0 and carstate.angle > 0:
+            command.gear = -1
+        if carstate.distance_from_center > 0 and carstate.angle < 0:
+            command.gear = -1
         return command
 
     def on_shutdown(self):

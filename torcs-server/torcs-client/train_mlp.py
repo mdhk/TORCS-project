@@ -17,8 +17,8 @@ train_data = TensorDataset(X, Y)
 net = nw.MLP(train_data.data_tensor, train_data.target_tensor, N_hidden=80)
 
 epochs = 1337
-# network = "models/mlp" + str(epochs)
 # net.load(network)
+# network = "models/mlp" + str(epochs)
 if __name__ == "__main__":
     net.train(epochs)
     data_means = np.mean(data, axis=0)
